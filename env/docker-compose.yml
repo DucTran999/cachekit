@@ -1,0 +1,24 @@
+services:
+  redis:
+    image: redis:8.2-m01-alpine
+    container_name: cachekit_redis
+    ports:
+      - "${REDIS_PORT}:6379" # REDIS_PORT must be defined in .env
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+    networks:
+      - localnet
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  localnet:
+    driver: bridge

@@ -1,0 +1,73 @@
+name: continuous-integration
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  lint-check:
+    name: golangci-lint-v2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run GolangCI-Lint
+        uses: golangci/golangci-lint-action@v8.0.0
+        with:
+          args: --timeout 5m --config .golangci.yml
+
+  test-coverage:
+    name: codecov-report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Install Task CLI
+        uses: arduino/setup-task@v2
+      - name: Tidy Modules
+        run: task tidy
+      - name: Setup database for test
+        run: task testenv
+      - name: Run Coverage Tests
+        run: task coverage
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./test/coverage/coverage.out
+          flags: unittests
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: cleanup
+        run: docker compose -f docker/docker-compose.yml down
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/golang@master
+        continue-on-error: true # To make sure that SARIF upload gets called
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=snyk.sarif --severity-threshold=high
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif

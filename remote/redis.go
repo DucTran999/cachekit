@@ -121,3 +121,26 @@ func (r *redisCache) Ping(ctx context.Context) error {
 func (r *redisCache) Close() error {
 	return r.client.Close()
 }
+
+func (r *redisCache) Expire(ctx context.Context, key string, expiration time.Duration) error {
+	return r.client.Expire(ctx, key, expiration).Err()
+}
+
+func (r *redisCache) TTL(ctx context.Context, key string) (int64, error) {
+	ttl, err := r.client.TTL(ctx, key).Result()
+	if err != nil {
+		return -1, err // return the actual error for clarity
+	}
+
+	if ttl < 0 {
+		// -2: key does not exist
+		// -1: key exists but has no expiration
+		if ttl == -2 {
+			return -2, cacheerr.ErrKeyNotFound
+		}
+
+		return -1, nil
+	}
+
+	return int64(ttl.Seconds()), nil
+}

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/DucTran999/cachekit/config"
+	cacheerr "github.com/DucTran999/cachekit/errors"
 	"github.com/DucTran999/cachekit/remote"
 )
 
@@ -22,6 +23,23 @@ type Cache interface {
 	Close() error
 }
 
-func NewRedisCache(config config.RedisConfig) (Cache, error) {
+type RedisConfig = config.RedisConfig
+
+// Configuration-related errors
+var (
+	ErrMissingHost = cacheerr.ErrMissingHost
+	ErrInvalidPort = cacheerr.ErrInvalidPort
+	ErrInvalidDB   = cacheerr.ErrInvalidDB
+)
+
+// Operation/runtime errors
+var (
+	ErrKeyNotFound    = cacheerr.ErrKeyNotFound
+	ErrDecode         = cacheerr.ErrDecode
+	ErrSetNil         = cacheerr.ErrSetNil
+	ErrSerializeValue = cacheerr.ErrSerializeValue
+)
+
+func NewRedisCache(config RedisConfig) (Cache, error) {
 	return remote.NewRedisCache(config)
 }

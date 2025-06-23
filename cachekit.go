@@ -15,6 +15,9 @@ type Cache interface {
 	Del(ctx context.Context, keys ...string) error
 	Has(ctx context.Context, key string) (bool, error)
 
+	Expire(ctx context.Context, key string, expiration time.Duration) error
+	TTL(ctx context.Context, key string) (int64, error)
+
 	Ping(ctx context.Context) error
 	Close() error
 }

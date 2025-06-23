@@ -142,6 +142,11 @@ func TestRedis(t *testing.T) {
 		require.True(t, exists)
 	})
 
+	t.Run("Set expire time", func(t *testing.T) {
+		err := cache.Expire(ctx, "test:redis:number", time.Minute)
+		require.NoError(t, err)
+	})
+
 	// Delete
 	t.Run("Delete string key", func(t *testing.T) {
 		err := cache.Del(ctx, "test:redis:string")
@@ -153,6 +158,43 @@ func TestRedis(t *testing.T) {
 		_, err := cache.Get(ctx, "test:redis:string")
 		require.Error(t, err)
 	})
+}
+
+func TestRedisManipulation(t *testing.T) {
+	ctx := context.Background()
+	cache := GetRedisInstance(t)
+
+	// Set Expire time
+	key := "test:redis:number"
+
+	// Set key
+	err := cache.Set(ctx, key, 10, 0)
+	require.NoError(t, err)
+
+	// No expire time key
+	ttl, err := cache.TTL(ctx, key)
+	require.NoError(t, err)
+	require.Equal(t, int64(-1), ttl)
+
+	// Set new expire time
+	err = cache.Expire(ctx, key, 5*time.Minute)
+	require.NoError(t, err)
+
+	// Check ttl
+	ttl, err = cache.TTL(ctx, key)
+	require.NoError(t, err)
+	require.Greater(t, ttl, int64(-1))
+
+	// Check ttl not existed key
+	ttl, err = cache.TTL(ctx, "some-key")
+	require.ErrorIs(t, err, cacheerr.ErrKeyNotFound)
+	require.Equal(t, int64(-2), ttl)
+
+	// close to simulate error from redis
+	cache.Close()
+
+	ttl, err = cache.TTL(ctx, "some-key")
+	require.NotNil(t, err)
 }
 
 func TestRedisErrorWhileRunning(t *testing.T) {

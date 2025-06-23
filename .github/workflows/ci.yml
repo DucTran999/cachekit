@@ -54,7 +54,7 @@ jobs:
           flags: unittests
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: cleanup
-        run: docker compose -f docker/docker-compose.yml down
+        run: docker compose -f env/docker-compose.yml down
 
   security:
     runs-on: ubuntu-latest

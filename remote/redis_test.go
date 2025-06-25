@@ -232,11 +232,14 @@ func TestRedisErrorWhileRunning(t *testing.T) {
 	_, err = cache.Get(ctx, key)
 	require.Error(t, err)
 
-	_, err = cache.KeyExists(ctx, key)
+	_, err = cache.ExistingKeys(ctx, key)
+	require.Error(t, err)
+
+	_, err = cache.MissingKeys(ctx, key)
 	require.Error(t, err)
 }
 
-func TestRedisKeyExists(t *testing.T) {
+func TestRedisKeyExistsAndMissing(t *testing.T) {
 	ctx := context.Background()
 	cache := GetRedisInstance(t)
 	defer cache.Close()
@@ -255,8 +258,11 @@ func TestRedisKeyExists(t *testing.T) {
 	time.Sleep(time.Second)
 
 	expectedKeyList := []string{key1, key3}
-	keyExists, err := cache.KeyExists(ctx, key1, key2, key3)
+	keyExists, err := cache.ExistingKeys(ctx, key1, key2, key3)
 	require.NoError(t, err)
+	require.ElementsMatch(t, keyExists, expectedKeyList)
 
-	assert.ElementsMatch(t, keyExists, expectedKeyList)
+	keyMissing, err := cache.MissingKeys(ctx, key1, key2, key3)
+	require.NoError(t, err)
+	require.ElementsMatch(t, keyMissing, []string{key2})
 }

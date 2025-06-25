@@ -158,10 +158,10 @@ func (r *redisCache) TTL(ctx context.Context, key string) (int64, error) {
 	return int64(ttl.Seconds()), nil
 }
 
-// KeyExists checks which of the provided keys exist in the Redis cache.
+// ExistingKeys checks which of the provided keys exist in the Redis cache.
 // It returns a slice of keys that currently have associated values.
 // Non-existent keys are filtered out using MGet and nil checking.
-func (r *redisCache) KeyExists(ctx context.Context, keys ...string) ([]string, error) {
+func (r *redisCache) ExistingKeys(ctx context.Context, keys ...string) ([]string, error) {
 	vals, err := r.client.MGet(ctx, keys...).Result()
 	if err != nil {
 		return nil, err
@@ -182,4 +182,23 @@ func (r *redisCache) KeyExists(ctx context.Context, keys ...string) ([]string, e
 // Use with caution as this will clear the entire Redis instance.
 func (r *redisCache) FlushAll(ctx context.Context) error {
 	return r.client.FlushAll(ctx).Err()
+}
+
+// MissingKeys returns a list of keys that do not exist in the Redis cache.
+// It uses MGet to check the existence of each key and filters out those with nil values.
+func (r *redisCache) MissingKeys(ctx context.Context, keys ...string) ([]string, error) {
+	vals, err := r.client.MGet(ctx, keys...).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter out keys that are missing (i.e., have nil value)
+	var missingKeys []string
+	for i, val := range vals {
+		if val == nil {
+			missingKeys = append(missingKeys, keys[i])
+		}
+	}
+
+	return missingKeys, nil
 }

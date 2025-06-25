@@ -4,11 +4,10 @@ import (
 	"log"
 
 	"github.com/DucTran999/cachekit"
-	"github.com/DucTran999/cachekit/config"
 )
 
 func main() {
-	cfg := config.RedisConfig{
+	cfg := cachekit.RedisConfig{
 		Host:     "localhost",
 		Port:     6379,
 		Username: "default",

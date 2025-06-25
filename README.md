@@ -1,6 +1,5 @@
 # cachekit
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/DucTran999/cachekit)](https://goreportcard.com/report/github.com/DucTran999/cachekit)
 [![Go](https://img.shields.io/badge/Go-1.23-blue?logo=go)](https://golang.org)
 [![codecov](https://codecov.io/gh/DucTran999/cachekit/graph/badge.svg?token=5XBMMBKCPD)](https://codecov.io/gh/DucTran999/cachekit)
 [![Known Vulnerabilities](https://snyk.io/test/github/ductran999/cachekit/badge.svg)](https://snyk.io/test/github/ductran999/cachekit)

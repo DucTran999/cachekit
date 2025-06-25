@@ -18,10 +18,10 @@ import (
 )
 
 type redisCacheUT struct {
-	redisInst cachekit.Cache
+	redisInst cachekit.RemoteCache
 }
 
-func GetRedisInstance(t *testing.T) cachekit.Cache {
+func GetRedisInstance(t *testing.T) cachekit.RemoteCache {
 	err := utils.LoadEnv(".env.local")
 	require.NoError(t, err)
 
@@ -37,6 +37,9 @@ func GetRedisInstance(t *testing.T) cachekit.Cache {
 	}
 
 	cache, err := cachekit.NewRedisCache(cfg)
+	require.NoError(t, err)
+
+	err = cache.FlushAll(context.Background())
 	require.NoError(t, err)
 
 	return cache
@@ -228,4 +231,32 @@ func TestRedisErrorWhileRunning(t *testing.T) {
 	// Get after delete
 	_, err = cache.Get(ctx, key)
 	require.Error(t, err)
+
+	_, err = cache.KeyExists(ctx, key)
+	require.Error(t, err)
+}
+
+func TestRedisKeyExists(t *testing.T) {
+	ctx := context.Background()
+	cache := GetRedisInstance(t)
+	defer cache.Close()
+
+	key1 := "key-exist-1"
+	key2 := "key-exist-2"
+	key3 := "key-exist-3"
+	err := cache.Set(ctx, key1, "value1", time.Minute)
+	require.NoError(t, err)
+	err = cache.Set(ctx, key2, "value2", time.Millisecond)
+	require.NoError(t, err)
+	err = cache.Set(ctx, key3, "value3", time.Minute)
+	require.NoError(t, err)
+
+	// Wait for key2 expired
+	time.Sleep(time.Second)
+
+	expectedKeyList := []string{key1, key3}
+	keyExists, err := cache.KeyExists(ctx, key1, key2, key3)
+	require.NoError(t, err)
+
+	assert.ElementsMatch(t, keyExists, expectedKeyList)
 }

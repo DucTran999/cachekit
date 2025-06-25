@@ -144,3 +144,24 @@ func (r *redisCache) TTL(ctx context.Context, key string) (int64, error) {
 
 	return int64(ttl.Seconds()), nil
 }
+
+func (r *redisCache) KeyExists(ctx context.Context, keys ...string) ([]string, error) {
+	vals, err := r.client.MGet(ctx, keys...).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter keys are existed
+	keyExists := make([]string, 0, len(vals))
+	for i, val := range vals {
+		if val != nil {
+			keyExists = append(keyExists, keys[i])
+		}
+	}
+
+	return keyExists, nil
+}
+
+func (r *redisCache) FlushAll(ctx context.Context) error {
+	return r.client.FlushAll(ctx).Err()
+}

@@ -27,8 +27,11 @@ type Cache interface {
 	// Has checks if the given key exists in the cache.
 	Has(ctx context.Context, key string) (bool, error)
 
-	// KeyExists returns a list of keys that currently exist among the provided ones.
-	KeyExists(ctx context.Context, keys ...string) ([]string, error)
+	// ExistingKeys returns a list of keys that currently exist among the provided ones.
+	ExistingKeys(ctx context.Context, keys ...string) ([]string, error)
+
+	// MissingKeys returns the subset of keys that do not exist.
+	MissingKeys(ctx context.Context, keys ...string) ([]string, error)
 
 	// Expire updates the TTL of the given key.
 	Expire(ctx context.Context, key string, expiration time.Duration) error

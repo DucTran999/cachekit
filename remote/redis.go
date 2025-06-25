@@ -46,6 +46,8 @@ func NewRedisCache(config config.RedisConfig) (*redisCache, error) {
 	return &redisCache{client: rdb}, nil
 }
 
+// Get retrieves the string value associated with the given key from Redis.
+// Returns ErrKeyNotFound if the key does not exist.
 func (r *redisCache) Get(ctx context.Context, key string) (string, error) {
 	val, err := r.client.Get(ctx, key).Result()
 	if err != nil {
@@ -53,13 +55,14 @@ func (r *redisCache) Get(ctx context.Context, key string) (string, error) {
 		if err == redis.Nil {
 			return "", fmt.Errorf("%w: %s", cacheerr.ErrKeyNotFound, key)
 		}
-
 		return "", err
 	}
-
 	return val, nil
 }
 
+// Set stores the given value in Redis under the specified key with an optional expiration.
+// The value can be a string, []byte, encoding.BinaryMarshaler, or any type that can be JSON-marshaled.
+// Returns ErrSetNil if the value is nil, or ErrSerializeValue if encoding fails.
 func (r *redisCache) Set(ctx context.Context, key string, value any, expiration time.Duration) error {
 	if value == nil {
 		return cacheerr.ErrSetNil
@@ -85,6 +88,8 @@ func (r *redisCache) Set(ctx context.Context, key string, value any, expiration 
 	return r.client.Set(ctx, key, string(b), expiration).Err()
 }
 
+// GetInto retrieves the cached value for the given key and unmarshals it into dest.
+// Returns ErrKeyNotFound if the key doesn't exist, or ErrDecode if unmarshaling fails.
 func (r *redisCache) GetInto(ctx context.Context, key string, dest any) error {
 	val, err := r.client.Get(ctx, key).Result()
 	if err != nil {
@@ -102,10 +107,12 @@ func (r *redisCache) GetInto(ctx context.Context, key string, dest any) error {
 	return nil
 }
 
+// Del deletes one or more keys from the Redis cache.
 func (r *redisCache) Del(ctx context.Context, keys ...string) error {
 	return r.client.Del(ctx, keys...).Err()
 }
 
+// Has checks whether the given key exists in the Redis cache.
 func (r *redisCache) Has(ctx context.Context, key string) (bool, error) {
 	exists, err := r.client.Exists(ctx, key).Result()
 	if err != nil {
@@ -114,18 +121,25 @@ func (r *redisCache) Has(ctx context.Context, key string) (bool, error) {
 	return exists == 1, nil
 }
 
+// Ping checks the connection to the Redis server to ensure it is reachable.
 func (r *redisCache) Ping(ctx context.Context) error {
 	return r.client.Ping(ctx).Err()
 }
 
+// Close shuts down the Redis client and releases any associated resources.
 func (r *redisCache) Close() error {
 	return r.client.Close()
 }
 
+// Expire sets a new expiration time for the given key in the Redis cache.
 func (r *redisCache) Expire(ctx context.Context, key string, expiration time.Duration) error {
 	return r.client.Expire(ctx, key, expiration).Err()
 }
 
+// TTL returns the time-to-live (in seconds) for the given key in Redis.
+// A return value of -2 indicates the key does not exist (with ErrKeyNotFound).
+// A return value of -1 indicates the key exists but has no expiration set.
+// Otherwise, it returns the remaining TTL in seconds.
 func (r *redisCache) TTL(ctx context.Context, key string) (int64, error) {
 	ttl, err := r.client.TTL(ctx, key).Result()
 	if err != nil {
@@ -138,20 +152,22 @@ func (r *redisCache) TTL(ctx context.Context, key string) (int64, error) {
 		if ttl == -2 {
 			return -2, cacheerr.ErrKeyNotFound
 		}
-
 		return -1, nil
 	}
 
 	return int64(ttl.Seconds()), nil
 }
 
+// KeyExists checks which of the provided keys exist in the Redis cache.
+// It returns a slice of keys that currently have associated values.
+// Non-existent keys are filtered out using MGet and nil checking.
 func (r *redisCache) KeyExists(ctx context.Context, keys ...string) ([]string, error) {
 	vals, err := r.client.MGet(ctx, keys...).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	// Filter keys are existed
+	// Filter keys that exist
 	keyExists := make([]string, 0, len(vals))
 	for i, val := range vals {
 		if val != nil {
@@ -162,6 +178,8 @@ func (r *redisCache) KeyExists(ctx context.Context, keys ...string) ([]string, e
 	return keyExists, nil
 }
 
+// FlushAll deletes all keys in the Redis cache across all databases.
+// Use with caution as this will clear the entire Redis instance.
 func (r *redisCache) FlushAll(ctx context.Context) error {
 	return r.client.FlushAll(ctx).Err()
 }
